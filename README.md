@@ -1,5 +1,7 @@
 # Spring Boot Sample Continuous Integration Gateway
 
+![Travis-CI](https://travis-ci.org/adiesner/spring-boot-sample-ci-gateway.svg?branch=master)
+
 For continuous integration it is essential that you can test the changes to your application in the real environment. This sample 
 project shows how you can deploy multiple versions of your application(s) and route the traffic for an individual user to a 
 specific instance of the application.
@@ -11,7 +13,7 @@ specific instance of the application.
 1) A developer commits his changes to a branch and creates a pull request
 2) A CI software like Jenkins detects this pull request, builds the software and deploys it
 3) The application registers itself at Eureka with ```$ApplicationName``` and MetaData: ```branch: $branchName```
-4) The developer (or automated E2E Tests) set a cookie ```$ApplicationName=$branchName``` (see ServiceConfig)
+4) The developer (or automated E2E Tests) sets a cookie ```$ApplicationName=$branchName``` (see ServiceConfig)
 5) All traffic to the application instances goes through the Zuul Gateway that interprets this cookie
 6) Result of automated E2E Tests is reported back to pull request
 
