@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimal-ui">
+  <link rel="stylesheet" href="https:////fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+  <link rel="stylesheet" href="https:////cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+  <link rel="stylesheet" href="https:////cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+  <style>
+    .container {
+      padding: 2vw 5vw;
+    }
+
+    .appListContainer {
+      table-layout: fixed;
+      width: 100%;
+      white-space: nowrap;
+    }
+
+    .appListContainer td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .appListContainer td:nth-child(2) {
+      cursor: pointer;
+    }
+
+    .successSpinnerTemplate {
+      display: none;
+    }
+
+    .spinnerPlaceholder {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+    }
+
+    .svg-success {
+      stroke-width: 2px;
+      stroke: #8EC343;
+      fill:none;
+    }
+
+    .svg-success path {
+      stroke-dasharray: 17px, 17px;
+      stroke-dashoffset: 0px;
+      animation: checkmark 0.25s ease-in-out 0.1s backwards;
+    }
+
+    @keyframes checkmark {
+      0% {
+        stroke-dashoffset: 17px;
+      }
+
+      100% {
+        stroke-dashoffset: 0
+      }
+    }
+
+  </style>
+</head>
+<body onload="render()">
+<div class="container">
+  <pre> Service Configuration</pre>
+  <small>Select the active instance of your application via the select box. It will set a cookie that will be interpreted by the ZuulGateway to route to the correct application instance.</small>
+  <div id="appListContainer" class="container"></div>
+</div>
+<div id="successSpinner" class="successSpinnerTemplate">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="-263.5 236.5 20 20">
+    <g class="svg-success">
+      <path d="M-256.46 249.65l3.9 3.74 8.02-7.8"/>
+    </g>
+  </svg>
+</div>
+
+<script>
+  const successSpinnerTemplate = document.querySelector('.successSpinnerTemplate').innerHTML;
+
+  async function render() {
+    const response = await fetch('./instances');
+    const apps = await response.json();
+
+    const sortedApps = apps
+      .sort((a, b) => sortString(a.name, b.name));
+
+    const selectedBranches = getSelectedBranches(sortedApps);
+
+    const sortedAppsHtml = sortedApps
+      .map(app => {
+        var html=`<div class="row" id="${app.name}"><div class="column column-20">${app.name}</div><div class="column column-70"><select id="branch" onclick="handleBranchChange('${app.name}')">`;
+        html += app.branch.map(branch => {
+          const isBranchSelected = getIsBranchSelected(selectedBranches, app.name, branch);
+          return `<option ${ isBranchSelected ? 'selected' : '' }>${branch}</option>`
+        }).join('');
+        html +=`</select></div><div class="column column-10 spinnerPlaceholder"></div></div>`;
+        return html;
+    });
+
+    document.getElementById('appListContainer').innerHTML = sortedAppsHtml.join('');
+  }
+
+  function setCookie(cname, cvalue, exdays) {
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    document.cookie = `${cname}=${cvalue};expires=${d.toUTCString()};path=/`;
+  }
+
+  function handleBranchChange(appName) {
+    const parentElement = document.getElementById(appName);
+    const branchOption = parentElement.querySelector('#branch');
+
+    setCookie(appName, branchOption.options[branchOption.selectedIndex].value, 1);
+
+    const spinnerPlaceholder = parentElement.querySelector('.spinnerPlaceholder');
+    spinnerPlaceholder.innerHTML = successSpinnerTemplate;
+
+    setTimeout(() => {
+      spinnerPlaceholder.innerHTML = '';
+  }, 5000);
+  }
+
+  function getSelectedBranches(allApps) {
+    const selectedBranches = {};
+
+    const cookies = document.cookie.split('; ');
+    const cookieApps = cookies.map(cookie => cookie.split('='));
+
+    cookieApps.forEach(([appName, branch]) => {
+      const appObject = allApps.find(app => app.name === appName);
+    if (appObject && appObject.branch.includes(branch)) {
+      selectedBranches[appName] = branch;
+    }
+  });
+
+    allApps.forEach(app => {
+      if (!selectedBranches[app.name]) {
+      selectedBranches[app.name] = 'master';
+    }
+  });
+
+    return selectedBranches;
+  }
+
+  function getIsBranchSelected(selectedBranches, appName, branch) {
+    if (!selectedBranches[appName] || selectedBranches[appName] !== branch) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function sortString(stringA, stringB) {
+    if (stringA < stringB) {
+      return -1;
+    }
+    if (stringA > stringB) {
+      return 1;
+    }
+
+    return 0;
+  }
+</script>
+</body>
+</html>

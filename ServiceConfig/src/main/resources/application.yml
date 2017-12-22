@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: serviceconfig
+
+server:
+  port: 9999
+
+eureka:
+  instance:
+    instanceId: ${spring.application.name}_${eureka.instance.metadataMap.branch}
+    metadataMap:
+      branch: master

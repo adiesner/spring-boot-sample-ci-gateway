@@ -1,0 +1,31 @@
+@startuml
+actor Browser1
+actor Browser2 #blue
+
+rectangle "ZuulGateway\nhttp://[::1]:8080" as ZuulGateway
+rectangle "Eureka\nhttp://[::1]:8761" as Eureka
+
+frame ServiceConfig {
+  artifact "ServiceConfig\nBranch:master\nhttp://[::1]:20000" as cfg
+}
+frame SampleService {
+  artifact "SampleService\nBranch:master\nhttp://[::1]:10000" as app0
+  artifact "SampleService\nBranch:feature/something_important\nhttp://[::1]:10001" as app1
+  artifact "SampleService\nBranch:feature/major_layout_changes\nhttp://[::1]:10002" as app2
+  artifact "SampleService\nBranch:release/17.52\nhttp://[::1]:10003" as app3
+}
+
+
+app0 ~~ Eureka
+app1 ~~ Eureka
+app2 ~~ Eureka
+app3 ~~ Eureka
+cfg ~~ Eureka
+
+Browser1 ==> ZuulGateway : GET http://[::1]:8080/sampleservice\n (Cookie: sampleservice=release/17.52)
+ZuulGateway ~~ Eureka
+ZuulGateway ==> app3:GET http://[::1]:10003/sampleservice
+
+Browser2 =[#blue]=> ZuulGateway :GET http://[::1]:8080/sampleservice
+ZuulGateway =[#blue]=> app0:GET http://[::1]:10000/sampleservice
+@enduml
